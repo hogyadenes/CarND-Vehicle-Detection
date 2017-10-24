@@ -1,4 +1,4 @@
-** Vehicle Detection Project **
+**Vehicle Detection Project**
 
 The goals / steps of this project were the following:
 
@@ -24,20 +24,29 @@ I started by read in all the training images. I also downloaded the Udacity trai
 
 For extracting the HOG features I used the udacity example functions. The big task here was to decide which color space and parameters to use. I tried several different parameter sets and color representations which I evaluated both visually and numerically (by training and testing the SVM classifier). 
 
-I explored different color spaces and different `skimage.hog()` parameters (`orientations`, `pixels_per_cell`, and `cells_per_block`).  I grabbed random images from each of the two classes and displayed them to get a feel for what the `skimage.hog()` output looks like.
+I explored different color spaces and different `skimage.hog()` parameters (`orientations`, `pixels_per_cell`, and `cells_per_block`).  More on that in the next section.
 
 
 #### 2. Explain how you settled on your final choice of HOG parameters.
 
-I tried various combinations of parameters and validated them both visually and by fitting an SVM classifier. The good feature set should enable the classifier to be both accurate and fast. I evaluated several different combinations:
-YCrCb/13/16 = 94.89, 0.0225
-YCrCb/13/8 = 94.17, 0.021
-HLS/13/16 = 94.93, 0.017
-YUV/13/16 = 94.18, 0.02
+I tried various combinations of parameters and validated them both visually and by fitting an SVM classifier. The good feature set should enable the classifier to be both accurate and fast. I evaluated several different combinations, always using all channels (using only one channel the accuracy was hit by a lot):
 
-Based on my results, I intially set the parameters to `orientations = 13` and `pix_per_cell = 16` which gave good results on the test set but gave poor results on the test images. It usually detected the back of the car but not the sides. So I ended up using the `YCrCb` color space with `orientations=9` and `pixels_per_cell=8`. This gave me a feature vector of size 7644.
+|Color space	          | orientations  | pixels_per_cell | accuracy | speed |
+|:---------------------:|:-------------:|:---------------:|:--------:|:-----:|
+|YCrCb | 13 | 16 | 94.89% | 0.0225s |
+|YCrCb | 13 | 8  | 94.85% | 0.021s  |
+|YCrCb | 9  | 8  | 94.17% | 0.021s  |
+|HLS   | 13 | 16 | 93.93% | 0.017s  |
+|YUV   | 13 | 16 | 94.18% | 0.02s   |
+|YUV   | 11 | 16 | 93.58% | 0.018s  |
+|YUV   |  9 | 16 | 93.18% | 0.018s  |
+|RGB   | 11 | 16 | 91.18% | 0.018s  |
 
-An example of my final parameter set (`YCrCb` color space and HOG parameters of `orientations=13`, `pixels_per_cell=(8, 8)` and `cells_per_block=(2, 2)`) on both vehicle and non-vehicle images:
+
+
+Based on my results, I intially set the parameters to `orientations = 13` and `pix_per_cell = 16` which gave good results on the test set but gave poor results on the test images. It usually detected the back of the car but not the sides. So I ended up using the `YCrCb` color space with `orientations=13` and `pixels_per_cell=8`. This gave me a feature vector of size 7644.
+
+An example of my final parameter set on both vehicle and non-vehicle images:
 
 ![Example1](./writeup_images/hog.jpg)
 
@@ -84,7 +93,7 @@ Here's a [link to my video result](./output.mp4)
 
 The video processing pipeline is similar to the single-image pipeline but there is a substantional difference between the two: I run the image processing pipeline on all frames of the video but the result of a given frame is calculated using some previous foundings as well.
 
-The function is called `process_video()` and it calculates the local single-frame results and adds them to a list (`self.boxes_list`). This list acts like a memory and helps to stabilize the between-frame results (normally a car should appear on multiple frames but noise is usually scattered).
+The function is called `process_video()` and it calculates the local single-frame results and adds them to a list (`self.boxes_list`). This list acts like a memory and helps to stabilize the between-frame results (normally a car should appear on multiple frames but noise is usually scattered). Using this list, a multi-frame heatmap is created, thresholded, labeled and the bounded using the previously described method.
 
 As length of the "memory" I empirically chose 15 (it is a parameter and was tuned carefully on the given video stream). The created multi-frame heatmap is thresholded with a value of 4. The result of the thresholding is then labeled with the `scipy.ndimage.measurements.label` function and resulting boundaries are drawn on the frame.
 
